@@ -16,7 +16,7 @@
       font-family: -apple-system, sans-serif;
     }
     .container { text-align: center; color: white; padding: 20px; }
-    .status { font-size: 18px; margin: 20px 0; }
+    .status { font-size: 18px; margin: 20px 0; line-height: 1.6; }
     .spinner {
       width: 40px; height: 40px;
       border: 4px solid rgba(255,255,255,0.3);
@@ -42,20 +42,25 @@
       const spinnerEl = document.getElementById('spinner');
 
       try {
+        statusEl.textContent = '初期化中...';
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
+          statusEl.textContent = 'ログイン中...';
           liff.login();
           return;
         }
 
-        // plateIdをURLパラメータから取得
+        statusEl.textContent = 'データ取得中...';
         const plateId = getPlateId() || '不明';
-        const userId = liff.getContext().userId;
+        const context = liff.getContext();
+        const userId = context ? context.userId : null;
+
+        if (!userId) {
+          throw new Error('LINE IDが取得できませんでした');
+        }
 
         statusEl.textContent = '送信中...';
-
-        // GASのdoPostにWebhook経由でデータを送る
         await liff.sendMessages([{
           type: 'text',
           text: '__SYSTEM__' + JSON.stringify({
@@ -67,25 +72,29 @@
 
         spinnerEl.style.display = 'none';
         statusEl.textContent = '✓ 完了しました！';
-
         setTimeout(() => liff.closeWindow(), 2000);
 
       } catch (error) {
-        document.getElementById('spinner').style.display = 'none';
-        statusEl.textContent = 'エラー: ' + error.message;
-        console.error(error);
+        spinnerEl.style.display = 'none';
+        statusEl.innerHTML =
+          'エラー:<br>' + (error.message || 'unknown') +
+          '<br>code: ' + (error.code || 'なし');
+        console.error('LIFF Error:', error);
       }
     }
 
     function getPlateId() {
-      // 方法1
       try {
         if (typeof liff.getQueryParam === 'function') {
-          return liff.getQueryParam('plate');
+          const val = liff.getQueryParam('plate');
+          if (val) return val;
         }
       } catch(e) {}
-      // 方法2
-      return new URLSearchParams(window.location.search).get('plate');
+      try {
+        const val = new URLSearchParams(window.location.search).get('plate');
+        if (val) return val;
+      } catch(e) {}
+      return null;
     }
 
     main();
