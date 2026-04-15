@@ -36,6 +36,7 @@
 
   <script>
     const LIFF_ID = '2009796249-ctBI5RkH'; // ← 変更
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw9h2J7xS8KdN83w55Kh8uPaov-Amr3mr0k7TVnrMkSNtgbuTpSi4vopFuNjstfdI3J/exec'; // ← 変更（/execで終わるURL）
 
     async function main() {
       const statusEl = document.getElementById('status');
@@ -46,30 +47,42 @@
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
-          statusEl.textContent = 'ログイン中...';
           liff.login();
           return;
         }
 
         statusEl.textContent = 'データ取得中...';
         const plateId = getPlateId() || '不明';
-        const context = liff.getContext();
-        const userId = context ? context.userId : null;
+        const userId = liff.getContext()?.userId;
 
-        if (!userId) {
-          throw new Error('LINE IDが取得できませんでした');
-        }
+        if (!userId) throw new Error('LINE IDが取得できませんでした');
 
         statusEl.textContent = '送信中...';
-        await liff.sendMessages([{
-          type: 'text',
-          text: '__SYSTEM__' + JSON.stringify({
-            type: 'plate_scan',
-            plateId: plateId,
-            timestamp: new Date().toISOString()
-          })
-        }]);
 
+        // GASに直接fetchで送信（no-cors：レスポンスは読めないが送信は届く）
+        await fetch(GAS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            events: [{
+              type: 'message',
+              timestamp: Date.now(),
+              source: { userId: userId },
+              message: {
+                type: 'text',
+                text: '__SYSTEM__' + JSON.stringify({
+                  type: 'plate_scan',
+                  plateId: plateId,
+                  timestamp: new Date().toISOString()
+                })
+              }
+            }]
+          })
+        });
+
+        // fetchはno-corsのためレスポンス確認不可
+        // → 一定時間後にシートを確認する必要あり
         spinnerEl.style.display = 'none';
         statusEl.textContent = '✓ 完了しました！';
         setTimeout(() => liff.closeWindow(), 2000);
@@ -91,8 +104,7 @@
         }
       } catch(e) {}
       try {
-        const val = new URLSearchParams(window.location.search).get('plate');
-        if (val) return val;
+        return new URLSearchParams(window.location.search).get('plate');
       } catch(e) {}
       return null;
     }
