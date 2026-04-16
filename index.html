@@ -23,7 +23,8 @@
     .status {
       font-size: 18px;
       margin: 20px 0;
-      line-height: 1.6;
+      line-height: 1.8;
+      opacity: 0.95;
     }
     .spinner {
       width: 40px;
@@ -32,68 +33,23 @@
       border-top-color: white;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin: 0 auto;
+      margin: 0 auto 20px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .complete-container {
-      display: none;
-      text-align: center;
-    }
-    .thank-you {
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 30px;
-    }
-    .divider {
-      width: 80%;
-      height: 1px;
-      background: rgba(255,255,255,0.4);
-      margin: 20px auto;
-    }
-    .friend-text {
-      font-size: 15px;
-      margin-bottom: 20px;
-      line-height: 1.6;
-      opacity: 0.95;
-    }
-    .add-friend-btn {
-      display: inline-block;
-      background: white;
-      color: #06C755;
-      padding: 14px 28px;
-      border-radius: 50px;
-      font-size: 16px;
-      font-weight: bold;
-      text-decoration: none;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- ローディング中 -->
-    <div id="loading-container">
-      <div class="spinner" id="spinner"></div>
-      <div class="status" id="status"></div>
-    </div>
-
-    <!-- 完了画面 -->
-    <div class="complete-container" id="complete-container">
-      <div class="thank-you">ご来店ありがとうございます！</div>
-      <div class="divider"></div>
-      <p class="friend-text">
-        📩 公式LINEを友だち追加すると<br>
-        フィードバックへの返信をお届けします！
-      </p>
-      <a href="https://line.me/R/ti/p/@365qrlrc"
-         class="add-friend-btn">
-        友だち追加する
-      </a>
+    <div class="spinner" id="spinner"></div>
+    <div class="status" id="status">
+      しばらくお待ちください...
     </div>
   </div>
 
   <script>
-    const LIFF_ID = '2009796249-ctBI5RkH'; // ← 変更
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzqYYo23L_qQh6XLL-QvpcCYVAXXQHeRGoHvv1BFQPFEX9AJQWK7FCVmegLZSUnVMPz/exec'; // ← 変更
+    const LIFF_ID = '2009796249-ctBI5RkH';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzqYYo23L_qQh6XLL-QvpcCYVAXXQHeRGoHvv1BFQPFEX9AJQWK7FCVmegLZSUnVMPz/exec'; // ← これだけ変更
+    const LINE_OFFICIAL_ID = '@365qrlrc';
 
     async function main() {
       const statusEl  = document.getElementById('status');
@@ -112,19 +68,20 @@
 
         if (!userId) throw new Error('LINE IDが取得できませんでした');
 
-        // バックグラウンドでデータ送信
         await sendData(userId, plateId);
 
       } catch (error) {
         document.getElementById('spinner').style.display = 'none';
         document.getElementById('status').innerHTML =
-          'エラー:<br>' + (error.message || 'unknown') +
-          '<br>code: ' + (error.code || 'なし');
+          'エラーが発生しました。<br>もう一度お試しください。';
         console.error('LIFF Error:', error);
       }
     }
 
     async function sendData(userId, plateId) {
+      const statusEl  = document.getElementById('status');
+      const spinnerEl = document.getElementById('spinner');
+
       await fetch(GAS_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -146,9 +103,18 @@
         })
       });
 
-      // ローディングを非表示にして完了画面を表示
-      document.getElementById('loading-container').style.display = 'none';
-      document.getElementById('complete-container').style.display = 'block';
+      spinnerEl.style.display = 'none';
+      statusEl.innerHTML =
+        'ありがとうございます！<br>' +
+        'ご意見を受け付けました。<br><br>' +
+        '公式LINEへ移動します...';
+
+      setTimeout(function() {
+        liff.openWindow({
+          url: 'https://line.me/R/ti/p/' + LINE_OFFICIAL_ID,
+          external: false
+        });
+      }, 1500);
     }
 
     function getPlateId() {
