@@ -15,10 +15,19 @@
       background: #06C755;
       font-family: -apple-system, sans-serif;
     }
-    .container { text-align: center; color: white; padding: 20px; }
-    .status { font-size: 18px; margin: 20px 0; line-height: 1.6; }
+    .container {
+      text-align: center;
+      color: white;
+      padding: 20px;
+    }
+    .status {
+      font-size: 18px;
+      margin: 20px 0;
+      line-height: 1.6;
+    }
     .spinner {
-      width: 40px; height: 40px;
+      width: 40px;
+      height: 40px;
       border: 4px solid rgba(255,255,255,0.3);
       border-top-color: white;
       border-radius: 50%;
@@ -26,24 +35,54 @@
       margin: 0 auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .add-friend-btn {
+      display: inline-block;
+      background: white;
+      color: #06C755;
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: bold;
+      text-decoration: none;
+      margin-top: 10px;
+    }
+    .add-friend-note {
+      margin-top: 20px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="spinner" id="spinner"></div>
-    <div class="status" id="status">読み取り中...</div>
+    <div class="status" id="status"></div>
+
+    <!-- 友だち追加促進UI（初期非表示） -->
+    <div id="add-friend-container" style="display:none;">
+      <p style="font-size:18px; margin-bottom:20px; line-height:1.6;">
+        📩 公式LINEを友だち追加すると<br>
+        フィードバックへの返信をお届けします！
+      </p>
+      <a href="https://line.me/R/ti/p/@ここにボットのベーシックIDを入力"
+         class="add-friend-btn">
+        友だち追加する
+      </a>
+      <p class="add-friend-note">
+        追加後、もう一度QRを読み込んでください
+      </p>
+    </div>
   </div>
 
   <script>
     const LIFF_ID = '2009796249-ctBI5RkH'; // ← 変更
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzqYYo23L_qQh6XLL-QvpcCYVAXXQHeRGoHvv1BFQPFEX9AJQWK7FCVmegLZSUnVMPz/exec'; // ← 変更（/execで終わるURL）
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzqYYo23L_qQh6XLL-QvpcCYVAXXQHeRGoHvv1BFQPFEX9AJQWK7FCVmegLZSUnVMPz/exec'; // ← 変更
 
     async function main() {
-      const statusEl = document.getElementById('status');
+      const statusEl  = document.getElementById('status');
       const spinnerEl = document.getElementById('spinner');
 
       try {
-        statusEl.textContent = '初期化中...';
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
@@ -51,49 +90,61 @@
           return;
         }
 
-        statusEl.textContent = 'データ取得中...';
         const plateId = getPlateId() || '不明';
-        const userId = liff.getContext()?.userId;
+        const userId  = liff.getContext()?.userId;
 
         if (!userId) throw new Error('LINE IDが取得できませんでした');
 
-        statusEl.textContent = '送信中...';
+        // 友だち追加状態を確認
+        const friendship = await liff.getFriendship();
 
-        // GASに直接fetchで送信（no-cors：レスポンスは読めないが送信は届く）
-        await fetch(GAS_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            events: [{
-              type: 'message',
-              timestamp: Date.now(),
-              source: { userId: userId },
-              message: {
-                type: 'text',
-                text: '__SYSTEM__' + JSON.stringify({
-                  type: 'plate_scan',
-                  plateId: plateId,
-                  timestamp: new Date().toISOString()
-                })
-              }
-            }]
-          })
-        });
+        if (!friendship.friendFlag) {
+          // 未追加 → 友だち追加画面を表示
+          spinnerEl.style.display = 'none';
+          document.getElementById('add-friend-container').style.display = 'block';
+          return;
+        }
 
-        // fetchはno-corsのためレスポンス確認不可
-        // → 一定時間後にシートを確認する必要あり
-        spinnerEl.style.display = 'none';
-        statusEl.textContent = '✓ 完了しました！';
-        setTimeout(() => liff.closeWindow(), 2000);
+        // 友だち追加済み → データ送信
+        await sendData(userId, plateId);
 
       } catch (error) {
-        spinnerEl.style.display = 'none';
-        statusEl.innerHTML =
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('status').innerHTML =
           'エラー:<br>' + (error.message || 'unknown') +
           '<br>code: ' + (error.code || 'なし');
         console.error('LIFF Error:', error);
       }
+    }
+
+    async function sendData(userId, plateId) {
+      const spinnerEl = document.getElementById('spinner');
+      const statusEl  = document.getElementById('status');
+
+      await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          events: [{
+            type: 'message',
+            timestamp: Date.now(),
+            source: { userId: userId },
+            message: {
+              type: 'text',
+              text: '__SYSTEM__' + JSON.stringify({
+                type: 'plate_scan',
+                plateId: plateId,
+                timestamp: new Date().toISOString()
+              })
+            }
+          }]
+        })
+      });
+
+      spinnerEl.style.display = 'none';
+      statusEl.textContent = 'ご来店ありがとうございます！';
+      setTimeout(() => liff.closeWindow(), 2000);
     }
 
     function getPlateId() {
@@ -104,7 +155,8 @@
         }
       } catch(e) {}
       try {
-        return new URLSearchParams(window.location.search).get('plate');
+        const val = new URLSearchParams(window.location.search).get('plate');
+        if (val) return val;
       } catch(e) {}
       return null;
     }
