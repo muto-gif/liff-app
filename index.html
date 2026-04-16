@@ -35,43 +35,12 @@
       margin: 0 auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .add-friend-btn {
-      display: inline-block;
-      background: white;
-      color: #06C755;
-      padding: 14px 28px;
-      border-radius: 50px;
-      font-size: 16px;
-      font-weight: bold;
-      text-decoration: none;
-      margin-top: 10px;
-    }
-    .add-friend-note {
-      margin-top: 20px;
-      font-size: 14px;
-      opacity: 0.8;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="spinner" id="spinner"></div>
     <div class="status" id="status"></div>
-
-    <!-- 友だち追加促進UI（初期非表示） -->
-    <div id="add-friend-container" style="display:none;">
-      <p style="font-size:18px; margin-bottom:20px; line-height:1.6;">
-        📩 公式LINEを友だち追加すると<br>
-        フィードバックへの返信をお届けします！
-      </p>
-      <a href="https://line.me/R/ti/p/@365qrlrc"
-         class="add-friend-btn">
-        友だち追加する
-      </a>
-      <p class="add-friend-note">
-        追加後、もう一度QRを読み込んでください
-      </p>
-    </div>
   </div>
 
   <script>
@@ -95,17 +64,6 @@
 
         if (!userId) throw new Error('LINE IDが取得できませんでした');
 
-        // 友だち追加状態を確認
-        const friendship = await liff.getFriendship();
-
-        if (!friendship.friendFlag) {
-          // 未追加 → 友だち追加画面を表示
-          spinnerEl.style.display = 'none';
-          document.getElementById('add-friend-container').style.display = 'block';
-          return;
-        }
-
-        // 友だち追加済み → データ送信
         await sendData(userId, plateId);
 
       } catch (error) {
