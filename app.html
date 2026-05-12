@@ -2,80 +2,20 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-
-  <!-- PWA メタタグ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="LIBヒアリング">
-  <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1a1a1a">
-
-  <!-- アイコン: GitHub Pages 上の lib-icon.png を参照 -->
-  <link rel="apple-touch-icon" sizes="180x180" href="lib-icon.png">
-  <link rel="apple-touch-icon-precomposed" sizes="180x180" href="lib-icon.png">
-  <link rel="icon" type="image/png" href="lib-icon.png">
-  <link rel="shortcut icon" href="lib-icon.png">
-
   <title>LIB 商品ヒアリング</title>
-
+  <link rel="apple-touch-icon" href="lib-icon.png">
+  <link rel="icon" href="lib-icon.png">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #fff;
-      -webkit-tap-highlight-color: transparent;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-    }
-    .loading {
-      position: fixed; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 12px;
-      background: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
-      transition: opacity .3s;
-      z-index: 10;
-    }
-    .loading.is-hidden { opacity: 0; pointer-events: none; }
-    .loading__logo {
-      font-family: 'Times New Roman', serif;
-      font-size: 36px;
-      letter-spacing: 0.2em;
-      color: #1a1a1a;
-    }
-    .loading__sub {
-      font-size: 11px;
-      color: #666;
-      letter-spacing: 0.3em;
-    }
-    .loading__dot {
-      width: 6px; height: 6px;
-      background: #1a1a1a;
-      border-radius: 50%;
-      animation: pulse 1s infinite;
-      margin-top: 8px;
-    }
-    @keyframes pulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fff; }
+    iframe { width: 100%; height: 100%; border: 0; display: block; }
   </style>
 </head>
 <body>
-  <div class="loading" id="loading">
-    <div class="loading__logo">LIB</div>
-    <div class="loading__sub">商品ヒアリング</div>
-    <div class="loading__dot"></div>
-  </div>
-  <iframe
-    id="app"
-    src="https://script.google.com/a/macros/borderless-japan.com/s/AKfycbx6UaU3VegwkUDyV6DoD7ztBcIvSP_EuONBWoCWhqvTMAMTprv6o5tQZ3-Qi8kJX_Tv/exec"
-    allow="clipboard-read; clipboard-write; geolocation"
-    onload="setTimeout(()=>document.getElementById('loading').classList.add('is-hidden'), 500)">
-  </iframe>
+  <iframe src="https://script.google.com/macros/s/AKfycbx6UaU3VegwkUDyV6DoD7ztBclvSP_EuONBWoCWhqvTMAMTprv6o5tQZ3-Qi8kJX_Tv/exec" allow="clipboard-read; clipboard-write; camera; microphone"></iframe>
 </body>
 </html>
