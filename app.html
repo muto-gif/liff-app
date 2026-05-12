@@ -1,99 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="LIBヒアリング">
-  <meta name="theme-color" content="#1a1a1a">
-  <title>LIB 商品ヒアリング</title>
-  <link rel="apple-touch-icon" href="lib-icon.png">
-  <link rel="icon" href="lib-icon.png">
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fff; }
-    iframe { width: 100%; height: 100%; border: 0; display: block; }
-    #lib-gate { position: fixed; inset: 0; background: #fff; z-index: 9999; display: flex; align-items: flex-start; justify-content: center; padding: 80px 20px; box-sizing: border-box; }
-    .lib-gate__inner { width: 100%; max-width: 340px; }
-    .lib-gate__logo { font-family: 'Times New Roman', serif; font-size: 32px; letter-spacing: 0.2em; text-align: center; margin-bottom: 40px; font-weight: 400; color: #1a1a1a; }
-    .lib-gate__lead { font-size: 13px; color: #666; text-align: center; margin-bottom: 24px; letter-spacing: 0.05em; }
-    .lib-gate__input { width: 100%; padding: 14px; font-size: 16px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
-    .lib-gate__input:focus { outline: none; border-color: #1a1a1a; }
-    .lib-gate__btn { width: 100%; padding: 14px; margin-top: 16px; background: #1a1a1a; color: #fff; border: none; border-radius: 4px; font-size: 14px; letter-spacing: 0.1em; cursor: pointer; font-family: inherit; }
-    .lib-gate__err { color: #a03b2e; font-size: 13px; text-align: center; margin-top: 12px; }
-    #app-iframe { display: none; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="LIB商品ヒアリング" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<title>LIB商品ヒアリング</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#fff; font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans",sans-serif; }
+  #app-iframe { display:none; width:100%; height:100%; border:0; }
+
+  /* ===== パスワードゲート ===== */
+  #lib-gate {
+    position:fixed; inset:0; z-index:9999;
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .lib-gate__card {
+    width:100%; max-width:360px;
+    text-align:center;
+  }
+  .lib-gate__logo {
+    width:96px; height:96px; border-radius:22px;
+    margin:0 auto 20px;
+    box-shadow:0 6px 18px rgba(0,0,0,.12);
+    object-fit:cover;
+  }
+  .lib-gate__title {
+    font-size:18px; font-weight:600; color:#222; margin:0 0 18px;
+  }
+  .lib-gate__input {
+    width:100%; box-sizing:border-box;
+    padding:12px 14px; font-size:16px;
+    border:1px solid #d0d0d0; border-radius:10px;
+    margin-bottom:10px;
+  }
+  .lib-gate__btn {
+    width:100%; box-sizing:border-box;
+    padding:12px 14px; font-size:16px; font-weight:600;
+    color:#fff; background:#222; border:0; border-radius:10px;
+    cursor:pointer;
+  }
+  .lib-gate__btn:active { opacity:.85; }
+  .lib-gate__err {
+    color:#c62828; font-size:13px; margin-top:8px; min-height:18px;
+  }
+
+  /* ===== ローディング画面 ===== */
+  #lib-loading {
+    position:fixed; inset:0; z-index:9998;
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .lib-loading__inner {
+    text-align:center;
+  }
+  .lib-loading__logo {
+    width:96px; height:96px; border-radius:22px;
+    box-shadow:0 6px 18px rgba(0,0,0,.12);
+    object-fit:cover;
+    margin:0 auto 18px;
+  }
+  .lib-loading__text {
+    font-size:14px; color:#666; margin-bottom:14px;
+  }
+  .lib-loading__dots {
+    display:flex; justify-content:center; gap:8px;
+  }
+  .lib-loading__dot {
+    width:8px; height:8px; border-radius:50%;
+    background:#222;
+    animation: lib-pulse 1.2s infinite ease-in-out both;
+  }
+  .lib-loading__dot:nth-child(1){ animation-delay:-0.32s; }
+  .lib-loading__dot:nth-child(2){ animation-delay:-0.16s; }
+  @keyframes lib-pulse {
+    0%, 80%, 100% { transform: scale(0.6); opacity:.4; }
+    40% { transform: scale(1);   opacity:1; }
+  }
+</style>
 </head>
 <body>
-  <div id="lib-gate">
-    <div class="lib-gate__inner">
-      <h2 class="lib-gate__logo">LIB</h2>
-      <p class="lib-gate__lead">パスワードを入力してください</p>
-      <input type="password" id="lib-gate-pw" class="lib-gate__input" autocomplete="current-password" />
-      <button id="lib-gate-btn" class="lib-gate__btn" onclick="libGateLogin()">ログイン</button>
-      <div id="lib-gate-err" class="lib-gate__err" hidden></div>
+
+<!-- パスワードゲート -->
+<div id="lib-gate">
+  <div class="lib-gate__card">
+    <img class="lib-gate__logo" id="lib-gate-logo" alt="LIB" />
+    <div class="lib-gate__title">LIB 商品ヒアリング</div>
+    <input id="lib-gate-pw" class="lib-gate__input" type="password" inputmode="text" autocomplete="off" placeholder="パスワードを入力" />
+    <button id="lib-gate-btn" class="lib-gate__btn" type="button">ログイン</button>
+    <div id="lib-gate-err" class="lib-gate__err"></div>
+  </div>
+</div>
+
+<!-- ローディング画面 -->
+<div id="lib-loading" hidden>
+  <div class="lib-loading__inner">
+    <img class="lib-loading__logo" id="lib-loading-logo" alt="LIB" />
+    <div class="lib-loading__text">読み込み中…</div>
+    <div class="lib-loading__dots">
+      <div class="lib-loading__dot"></div>
+      <div class="lib-loading__dot"></div>
+      <div class="lib-loading__dot"></div>
     </div>
   </div>
-  <iframe id="app-iframe" allow="clipboard-read; clipboard-write; camera; microphone"></iframe>
-  <script>
-    const APP_URL = 'https://script.google.com/macros/s/AKfycbx7Pc2sxYFYFRWGxQF0_ugZU1P22VZj70MEpjY4gopNS2KgiIKlXUmfPz2UHNQBAzp-/exec';
-    const GATE_KEY = 'lib_access_v1';
-    const SETUP_KEY = 'lib_setup_v1';
+</div>
 
-    function todayKey() { return new Date().toDateString(); }
+<!-- 本体 iframe -->
+<iframe id="app-iframe" allow="microphone; clipboard-read; clipboard-write" allowfullscreen></iframe>
 
-    function buildAppUrl() {
-      const setup = localStorage.getItem(SETUP_KEY);
-      if (!setup) return APP_URL;
-      const sep = APP_URL.includes('?') ? '&' : '?';
-      return APP_URL + sep + 'setup=' + encodeURIComponent(setup);
+<script>
+(function(){
+  var APP_URL   = 'https://script.google.com/macros/s/AKfycbx7Pc2sxYFYFRWGxQF0_ugZU1P22VZj70MEpjY4gopNS2KgiIKlXUmfPz2UHNQBAzp-/exec';
+  var GATE_KEY  = 'lib_gate_date';   // 値は YYYY-MM-DD 形式の今日の日付
+  var SETUP_KEY = 'lib_setup';       // 値は { 店舗名:'', スタッフ名:'' } の JSON
+  var LOGO_URL  = 'icon-180.png';    // ロゴ画像(ローカル)
+
+  // ロゴをセット
+  try {
+    document.getElementById('lib-gate-logo').src = LOGO_URL;
+    document.getElementById('lib-loading-logo').src = LOGO_URL;
+  } catch(_){}
+
+  function todayStr() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd= ('0' + d.getDate()).slice(-2);
+    return y + '-' + m + '-' + dd;
+  }
+  function isLoggedInToday() {
+    try { return localStorage.getItem(GATE_KEY) === todayStr(); } catch(_){ return false; }
+  }
+  function markLoggedInToday() {
+    try { localStorage.setItem(GATE_KEY, todayStr()); } catch(_){}
+  }
+  function loadSetup() {
+    try {
+      var raw = localStorage.getItem(SETUP_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(_){ return null; }
+  }
+  function saveSetup(obj) {
+    try { localStorage.setItem(SETUP_KEY, JSON.stringify(obj || {})); } catch(_){}
+  }
+  function buildAppUrl() {
+    var setup = loadSetup();
+    if (setup && (setup.店舗名 || setup.スタッフ名)) {
+      return APP_URL + '?setup=' + encodeURIComponent(JSON.stringify(setup));
     }
+    return APP_URL;
+  }
 
-    function showApp() {
-      const gateEl = document.getElementById('lib-gate');
-      if (gateEl) gateEl.remove();
-      const iframe = document.getElementById('app-iframe');
-      iframe.src = buildAppUrl();
-      iframe.style.display = 'block';
-    }
+  function showApp() {
+    var gate = document.getElementById('lib-gate');
+    if (gate) gate.remove();
 
-    // 起動時チェック: 今日ログイン済みなら自動ログイン
-    (function() {
-      if (localStorage.getItem(GATE_KEY) === todayKey()) {
-        showApp();
-      }
-    })();
+    var loading = document.getElementById('lib-loading');
+    if (loading) loading.removeAttribute('hidden');
 
-    // iframe からの setup 保存メッセージを受信
-    window.addEventListener('message', function(e) {
-      if (e.data && e.data.type === 'lib_save_setup' && e.data.setup) {
-        try { localStorage.setItem(SETUP_KEY, JSON.stringify(e.data.setup)); } catch(_){}
-      }
-    });
+    var iframe = document.getElementById('app-iframe');
+    iframe.addEventListener('load', function(){
+      if (loading) loading.style.display = 'none';
+    }, { once: true });
 
-    window.libGateLogin = async function() {
-      const pw = document.getElementById('lib-gate-pw').value;
-      const errEl = document.getElementById('lib-gate-err');
-      errEl.setAttribute('hidden', '');
-      try {
-        const url = APP_URL + '?action=verify&pw=' + encodeURIComponent(pw);
-        const res = await fetch(url).then(r => r.json());
+    iframe.src = buildAppUrl();
+    iframe.style.display = 'block';
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('lib-gate-err');
+    if (el) el.textContent = msg || '';
+  }
+
+  function login() {
+    var pw = (document.getElementById('lib-gate-pw') || {}).value || '';
+    if (!pw) { showError('パスワードを入力してください'); return; }
+    showError('確認中…');
+    var url = APP_URL + '?action=verify&pw=' + encodeURIComponent(pw);
+    fetch(url, { method:'GET' })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
         if (res && res.ok) {
-          localStorage.setItem(GATE_KEY, todayKey());
+          markLoggedInToday();
           showApp();
         } else {
-          errEl.textContent = 'パスワードが違います';
-          errEl.removeAttribute('hidden');
+          showError(res && res.error === 'NOT_CONFIGURED' ? 'パスワードが設定されていません' : 'パスワードが違います');
         }
-      } catch (e) {
-        errEl.textContent = 'エラー: ' + (e.message || e);
-        errEl.removeAttribute('hidden');
-      }
-    };
+      })
+      .catch(function(){ showError('通信エラーが発生しました'); });
+  }
 
-    document.getElementById('lib-gate-pw').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') document.getElementById('lib-gate-btn').click();
+  // グローバルに公開(onclick fallback 用)
+  window.__libGateLogin = login;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('lib-gate-btn').addEventListener('click', login);
+    document.getElementById('lib-gate-pw').addEventListener('keydown', function(e){
+      if (e.key === 'Enter') login();
     });
-  </script>
+
+    // 当日ログイン済みなら即アプリ表示
+    if (isLoggedInToday()) {
+      showApp();
+    }
+  });
+
+  // 子 iframe (内部 HTML) からの postMessage を受信して setup を保存
+  window.addEventListener('message', function(e){
+    var data = e && e.data;
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'lib_save_setup' && data.setup) {
+      saveSetup(data.setup);
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
