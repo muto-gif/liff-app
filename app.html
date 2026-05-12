@@ -38,7 +38,8 @@
   <script>
     const APP_URL = 'https://script.google.com/macros/s/AKfycby0eM7pdns_XqCHsJ_hLMlfuQPgz9QQNk4xjjUa6bki4Onn6fcu4_DzN_WXRJ4fAeTq/exec';
     const GATE_KEY = 'lib_access_v1';
-    const EXPIRES_MS = 30 * 24 * 60 * 60 * 1000; // 30日
+
+    function todayKey() { return new Date().toDateString(); }
 
     function showApp() {
       const gateEl = document.getElementById('lib-gate');
@@ -48,10 +49,9 @@
       iframe.style.display = 'block';
     }
 
-    // 起動時チェック: 30日以内なら自動ログイン
+    // 起動時チェック: 今日ログイン済みなら自動ログイン
     (function() {
-      const saved = parseInt(localStorage.getItem(GATE_KEY), 10);
-      if (saved && Date.now() - saved < EXPIRES_MS) {
+      if (localStorage.getItem(GATE_KEY) === todayKey()) {
         showApp();
       }
     })();
@@ -64,7 +64,7 @@
         const url = APP_URL + '?action=verify&pw=' + encodeURIComponent(pw);
         const res = await fetch(url).then(r => r.json());
         if (res && res.ok) {
-          localStorage.setItem(GATE_KEY, String(Date.now()));
+          localStorage.setItem(GATE_KEY, todayKey());
           showApp();
         } else {
           errEl.textContent = 'パスワードが違います';
