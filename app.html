@@ -36,16 +36,24 @@
   </div>
   <iframe id="app-iframe" allow="clipboard-read; clipboard-write; camera; microphone"></iframe>
   <script>
-    const APP_URL = 'https://script.google.com/macros/s/AKfycbyJUmrSGxkOl8pyP3kNTQmv2XbYiCR-ToDo4TqJ0MGu1LP-blcpTzJfDh6niE2mvdz5/exec';
+    const APP_URL = 'https://script.google.com/macros/s/AKfycbypUWBm32tWoDcjDPlpsOWiJeWxMTO5K4TPArdCWEFVPxV4KDf2yJCeiznpNZsS7-qF/exec';
     const GATE_KEY = 'lib_access_v1';
+    const SETUP_KEY = 'lib_setup_v1';
 
     function todayKey() { return new Date().toDateString(); }
+
+    function buildAppUrl() {
+      const setup = localStorage.getItem(SETUP_KEY);
+      if (!setup) return APP_URL;
+      const sep = APP_URL.includes('?') ? '&' : '?';
+      return APP_URL + sep + 'setup=' + encodeURIComponent(setup);
+    }
 
     function showApp() {
       const gateEl = document.getElementById('lib-gate');
       if (gateEl) gateEl.remove();
       const iframe = document.getElementById('app-iframe');
-      iframe.src = APP_URL;
+      iframe.src = buildAppUrl();
       iframe.style.display = 'block';
     }
 
@@ -55,6 +63,13 @@
         showApp();
       }
     })();
+
+    // iframe からの setup 保存メッセージを受信
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'lib_save_setup' && e.data.setup) {
+        try { localStorage.setItem(SETUP_KEY, JSON.stringify(e.data.setup)); } catch(_){}
+      }
+    });
 
     window.libGateLogin = async function() {
       const pw = document.getElementById('lib-gate-pw').value;
